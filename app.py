@@ -16,8 +16,6 @@ import tornado.web
 import tornado.websocket
 import tornado.autoreload
 
-
-
 from redis import Redis
 from rq import Queue
 
