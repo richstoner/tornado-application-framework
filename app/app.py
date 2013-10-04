@@ -93,7 +93,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
         self.shared = shared
         #print self.shared
-        tornado.ioloop.IOLoop.instance().add_timeout(datetime.timedelta(seconds=3), self.check_queue)
 
 
     def allow_draft76(self):
@@ -135,36 +134,44 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
             job = self.shared.q.enqueue(processDropboxImage, messagedict['files'])
             self.shared.js.append(job)
-            while not job.result:
-                time.sleep(1)
+            #while not job.result:
+            #    time.sleep(1)
+            #
+            #return_data['data'] = job.result
+            #return_data['result'] = True
+            #
+            #print 'job complete'
+            #print job.result
 
-            return_data['data'] = job.result
-            return_data['result'] = True
-
-            print 'job complete'
-            print job.result
-
-            self.write_message(json.dumps(return_data))
+            #self.write_message(json.dumps(return_data))
 
         else:
 
             self.write_message(json.dumps(return_data))
 
+        tornado.ioloop.IOLoop.instance().add_timeout(datetime.timedelta(seconds=1), self.check_queue)
+
 
     def check_queue(self):
 
-        print '.'
+        #print '.'
         list_to_remove = []
 
         for i in range(len(self.shared.js)):
 
             j = self.shared.js[i]
 
-            from pprint import pprint
-            pprint (vars(j))
+            j.refresh()
+
+            print '\n***************************\n'
+
+            print j.meta
+
+            #from pprint import pprint
+            #pprint (vars(j))
 
             if j.result:
-                print j.result
+                #print j.result
                 print 'now removing it'
                 list_to_remove.append(i)
 
@@ -174,6 +181,18 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 return_data['contents'] = json.loads(j.result)
 
                 self.write_message(json.dumps(return_data))
+
+
+            elif j.meta:
+
+                #todo add support for multiple jobs
+                return_data = {}
+                return_data['result'] = True
+                return_data['func'] = 'update_meta'
+                return_data['contents'] = j.meta
+
+                self.write_message(json.dumps(return_data))
+
 
         for index in sorted(list_to_remove, reverse=True):
             print 'removing job at index %d' % index
@@ -185,7 +204,8 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         #for n,j in enumerate(jobs_list):
         #    print n, j.result
 
-        tornado.ioloop.IOLoop.instance().add_timeout(datetime.timedelta(seconds=3), self.check_queue)
+        if len(self.shared.js) > 0:
+            tornado.ioloop.IOLoop.instance().add_timeout(datetime.timedelta(seconds=1), self.check_queue)
 
 
 

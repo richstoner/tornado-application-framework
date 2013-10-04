@@ -14,6 +14,8 @@ tornado_app.controller('ApplicationController', ['$scope', '$rootScope', '$timeo
          // 'files' is an array of JavaScript 'File' objects.
         $scope.files = [];
 
+        $scope.dropbox_status = 'Status';
+
         $scope.wsinit = WebSocketService.inittest();
 
         $scope.$watch('files', function (newValue, oldValue) {
@@ -47,7 +49,7 @@ tornado_app.controller('ApplicationController', ['$scope', '$rootScope', '$timeo
             // add an event listener to a Chooser button
         document.getElementById("db-chooser").addEventListener("DbxChooserSuccess",
             function(e) {
-                alert("Here's the chosen file: " + e.files[0].link)
+                console.log("Here's the chosen file: " + e.files[0].link)
                 WebSocketService.selectDropboxFile(e.files);
             }, false);
     }])
@@ -174,15 +176,24 @@ tornado_app.factory('WebSocketService', ['$q', '$rootScope', '$http', function (
         }
         else {
 
-            console.log('need to write delegate function that applies push data to rootscope variables (with validation');
-            console.log('unrequested message', messageObj);
+//            console.log('need to write delegate function that applies push data to rootscope variables (with validation');
+//            console.log('unrequested message', messageObj);
+
 
             if(messageObj.func == 'update_image'){
                 var newdiv = '<div class="col-md-12"><p class="well"><img class="thumbnail" src="'+messageObj.contents.src +'"/><img class="thumbnail" src="'+messageObj.contents.srcproc +'"/></p></div>'
                 $("#output-container").append(newdiv);
             }
-            $rootScope.example_variable = true;
-            $rootScope.$apply();
+            else if(messageObj.func == 'update_meta'){
+//                console.log(messageObj)
+                $rootScope.dropboxStatus = messageObj.contents.state;
+                $rootScope.$apply();
+
+            }
+
+
+
+//            $rootScope.example_variable = true;
         }
     }
 

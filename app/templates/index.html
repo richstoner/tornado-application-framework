@@ -188,7 +188,7 @@
           <li><a href="http://localhost:9001" target="_blank">Open Supervisor web interface</a></li>
           <li><a href="http://localhost:9181" target="_blank">Open Redis Queue Dashboard</a></li>
           <li><a href="http://localhost:8001" target="_blank">Open Tornado app raw port</a></li>
-          <li><a href="" ng-click="example_action()">Simple Action</a></li>
+
 
         </ul>
       </div>
@@ -208,13 +208,18 @@
               <p class="lead">This is a simple page to do simple things.</p>
             </div>
 
-              <div class="col-md-12 well">
-                <p class="well">
-                    Action result : {{ kickoffresult }}
-                </p>
+              <div class="col-md-12">
+
+                  <div class="btn-group">
+                    <button class="btn btn-default" ng-click="example_action()">Run wordcount test</button>
+                    <button class="btn btn-default disabled">Words: {{ kickoffresult }}</button>
+                  </div>
+
             </div>
 
-            <div class="col-md-12">
+              <br>
+
+            <div class="col-md-12" ng-hide=1>
                 <p class="well">
                 <input id="filepicker" type="file" multiple ng-model="files_to_upload" file-change>
                 <br>
@@ -228,6 +233,8 @@
             <div class="col-md-12">
                 <p class="well">
                     <input type="dropbox-chooser" data-link-type="direct" name="selected-file" id="db-chooser"/>
+                    <br>
+                    <span class="label label-default">{{ dropboxStatus }}</span>
                 </p>
             </div>
           </div>
