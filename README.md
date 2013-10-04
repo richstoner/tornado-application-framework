@@ -46,10 +46,60 @@ Currently, this application depends on:
 tornado and rq installed via pip
 redis-server installed via homebrew
 frontend dependencies (angular, jquery, bootstrap) installed via bower
+interactive deploy on vagrant, running 12.04, managed by fabric
 
 ### Example jobs
 
 We're using scipy, sci-kit image, and requests to demonstrate long running jobs via rq.
+
+
+## Getting Started with a running instance
+
+1) In the root directory, launch a vagrant instance (you'll need to download a precise64 box via the vagrant install instructions).
+
+	vagrant up;
+	
+2) Verify the vm is working
+
+	fab vagrant sysinfo
+
+Output:
+	
+	[localhost] local: vagrant ssh-config | grep IdentityFile
+	[127.0.0.1:2222] Executing task 'sysinfo'
+	[127.0.0.1:2222] run: uname -a
+	[127.0.0.1:2222] out: Linux precise64 3.2.0-23-generic #36-Ubuntu SMP Tue Apr 10 20:39:51 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux
+	[127.0.0.1:2222] out: 
+	
+	[127.0.0.1:2222] run: lsb_release -a
+	[127.0.0.1:2222] out: No LSB modules are available.
+	[127.0.0.1:2222] out: Distributor ID:	Ubuntu
+	[127.0.0.1:2222] out: Description:	Ubuntu 12.04.3 LTS
+	[127.0.0.1:2222] out: Release:	12.04
+	[127.0.0.1:2222] out: Codename:	precise
+
+3) Provision the VM using fab (this currently does more than it needs to - lots of vestigial code)
+
+	fab vagrant base
+	fab vagrant externals
+	
+4) Start the nginx server
+
+	fab vagrant startnginx
+	
+5) 
+	
+	
+	
+
+
+
+
+
+
+
+
+
 
 
 
