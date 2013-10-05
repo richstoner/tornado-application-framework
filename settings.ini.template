@@ -1,0 +1,5 @@
+;configure.ini - comments as needed
+
+[digitalocean]
+api_key = your_key_here
+client_id = your_id_here

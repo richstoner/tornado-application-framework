@@ -7,7 +7,51 @@ from datetime import datetime
 import sys, pprint, time, ConfigParser, os
 from ConfigParser import SafeConfigParser
 
- 
+parser = SafeConfigParser()
+parser.read('settings.ini')
+
+client_id = parser.get('digitalocean', 'client_id')
+api_key = parser.get('digitalocean', 'api_key')
+
+def dostat():
+
+    import digitalocean
+
+    manager = digitalocean.Manager(client_id=client_id, api_key=api_key)
+    my_droplets = manager.get_all_droplets()
+    for droplet in my_droplets:
+        print '%s, %s, %s' % (droplet.name, droplet.ip_address, droplet.image_id)
+
+def dolaunch():
+
+    import digitalocean
+
+    droplet = digitalocean.Droplet(client_id=client_id, api_key=api_key, name='autodrop', region_id=3, image_id=284203,
+                                   size_id=66, backup_active=False)
+    
+    # this configures a 512MB droplet in NYC running 12.04 LTS
+    # ... I had to install a ruby gem (tugboat) first to get the list of image ids... 
+
+    print droplet
+    droplet.create()
+    
+    while event.percentage != 100:
+        ### Refreshing the event status
+        #### Checking the status of the droplet
+        event = droplet.get_events()[0]
+        event.load()
+        #Once it shows 100, droplet is up and running
+        print event
+        print event.percentage
+    
+    print droplet.ip_address
+
+
+
+
+
+
+
 def vagrant():
     # change from the default user to 'vagrant'
     env.user = 'vagrant'
@@ -18,6 +62,8 @@ def vagrant():
     result = local('vagrant ssh-config | grep IdentityFile', capture=True)
     env.key_filename = result.split()[1]
      
+
+
 
 def sysinfo():
     run('uname -a')
