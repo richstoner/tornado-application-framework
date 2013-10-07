@@ -1,5 +1,17 @@
 ;configure.ini - comments as needed
 
 [digitalocean]
-api_key = your_key_here
-client_id = your_id_here
+api_key =
+client_id =
+
+[aws]
+aws_access = your_key
+aws_secret = your_secret
+
+[admin]
+admin_generate_key = 0
+admin_use_oauth = 0
+admin_key = debug
+admin_email = someone@gmail.com
+
+

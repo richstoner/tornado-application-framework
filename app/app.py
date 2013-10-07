@@ -9,6 +9,7 @@ This code acts as the application's primary controller, and provides links to th
 
 
 
+
 import tornado.escape
 import tornado.ioloop
 import tornado.options
@@ -20,10 +21,10 @@ from redis import Redis
 from rq import Queue
 
 import requests
+import sys, pprint, time, ConfigParser, os
+from ConfigParser import SafeConfigParser
 
 from tornado.options import define, options
-
-define("port", default=8000, help="run on the given port", type=int)
 
 # utility classes
 import json
@@ -35,6 +36,10 @@ import random
 import time
 import string
 from time import mktime, sleep
+
+
+define("port", default=8000, help="run on the given port", type=int)
+
 
 root = os.path.dirname(__file__)
 
@@ -89,10 +94,10 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
 
     # place any shared objects or settings in this object during initialization from main loop
-    def initialize(self, shared):
-
-        self.shared = shared
-        #print self.shared
+    #def initialize(self, shared):
+    #
+    #    self.shared = shared
+    #    #print self.shared
 
 
     def allow_draft76(self):
@@ -117,7 +122,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         return_data['callback_id'] = messagedict['callback_id']
 
         if messagedict['type'] == 'kickoff_queue':
-            job = self.shared.q.enqueue(count_words_at_url, 'http://nvie.com')
+            job = self.application.q.enqueue(count_words_at_url, 'http://nvie.com')
             #self.shared.js.append(job)
             while not job.result:
                 time.sleep(1)
@@ -132,8 +137,8 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
         elif messagedict['type'] == 'dropbox':
 
-            job = self.shared.q.enqueue(processDropboxImage, messagedict['files'])
-            self.shared.js.append(job)
+            job = self.application.q.enqueue(processDropboxImage, messagedict['files'])
+            self.application.jobs.append(job)
             #while not job.result:
             #    time.sleep(1)
             #
@@ -157,9 +162,9 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         #print '.'
         list_to_remove = []
 
-        for i in range(len(self.shared.js)):
+        for i in range(len(self.application.jobs)):
 
-            j = self.shared.js[i]
+            j = self.application.jobs[i]
 
             j.refresh()
 
@@ -196,7 +201,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
         for index in sorted(list_to_remove, reverse=True):
             print 'removing job at index %d' % index
-            del self.shared.js[index]
+            del self.application.jobs[index]
 
         #jobs_list = self.shared.q.get_jobs()
         #print self.shared.q.job_ids
@@ -204,10 +209,32 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         #for n,j in enumerate(jobs_list):
         #    print n, j.result
 
-        if len(self.shared.js) > 0:
+        if len(self.application.jobs) > 0:
             tornado.ioloop.IOLoop.instance().add_timeout(datetime.timedelta(seconds=1), self.check_queue)
 
 
+
+class AdminHandler(tornado.web.RequestHandler):
+
+
+    def get(self, argument):
+
+        if argument == self.application.admin_key:
+            #self.write('admin view')
+            try:
+                with open(os.path.join(root, 'templates/admin.html')) as f:
+                    self.write(f.read())
+            except IOError as e:
+                self.write("404: Not Found")
+        else:
+            #self.write('invalid %s' % argument)
+            self.write("404: Not Found")
+            self.finish()
+
+
+
+
+        #print self.shared
 
 
 
@@ -216,14 +243,8 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
 class UploadHandler(tornado.web.RequestHandler):
 
-    def initialize(self, shared):
-        self.shared = shared
-        print self.shared
-
     def post(self):
-
         #print self.request.files.keys()
-
         file1 = self.request.files['file'][0]
         original_fname = file1['filename']
         extension = os.path.splitext(original_fname)[1]
@@ -235,14 +256,10 @@ class UploadHandler(tornado.web.RequestHandler):
         output_file.close()
 
         from rqtasks import processImage
-        job = self.shared.q.enqueue(processImage,full_path)
-        self.shared.js.append(job)
-
-        #print self.shared.js
+        job = self.application.q.enqueue(processImage,full_path)
+        self.application.jobs.append(job)
 
         self.finish("file" + final_filename + " is uploaded")
-
-
 
 
 
@@ -255,14 +272,29 @@ class Application(tornado.web.Application):
 
     def __init__(self):
 
-        self.shared_object = Object()
-        self.shared_object.js = []
-        self.shared_object.q = Queue(connection=Redis())
+        parser = SafeConfigParser()
+        parser.read('../settings.ini')
+
+        gen_key = parser.get('admin', 'admin_generate_key')
+        admin_key = ''
+
+        if gen_key==1:
+            import uuid
+            admin_key = uuid.uuid4()
+        else:
+            admin_key = parser.get('admin', 'admin_key')
+
+        self.jobs = []
+        self.admin_key = str(admin_key)
+        self.q = Queue(connection=Redis())
+
+        print 'to access the admin path, visit /admin/%s' % (admin_key)
 
         handlers = [
             (r'/', WebHandler),
-            (r'/ws', WSHandler, dict(shared=self.shared_object)),
-            (r'/upload', UploadHandler, dict(shared=self.shared_object))
+            (r'/admin/(.*)', AdminHandler),
+            (r'/ws', WSHandler),
+            (r'/upload', UploadHandler)
         ]
         settings = dict(
             cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",

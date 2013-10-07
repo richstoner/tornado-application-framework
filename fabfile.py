@@ -143,9 +143,12 @@ def startall():
     '''[start] starts or restarts anything that needs to be running'''
 
     with settings(warn_only=True):
-        sudo('service nginx restart')
-        sudo('service redis-server restart')
-        sudo('supervisorctl restart all')
+
+        sudo('service redis-server start')
+
+        startnginx()
+        startsupervisor()
+
         sudo('mkdir -p /vagrant/app/static/uploads')
 
 
